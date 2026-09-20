@@ -56,7 +56,7 @@ def main():
             })
 
     with open("stater_bros_ad.json", "w") as f:
-        json.dump(output, f, indent=2)
+        json.dump(output, f, indent=2, ensure_ascii=False)
 
     with open(last_id_file, "w") as f:
         f.write(str(current_flyer_id))
