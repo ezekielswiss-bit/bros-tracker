@@ -1,4 +1,3 @@
-yaml
 name: Check for New Stater Bros Ad
 on:
   schedule:
