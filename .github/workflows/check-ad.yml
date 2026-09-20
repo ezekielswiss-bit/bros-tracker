@@ -1,0 +1,6 @@
+yaml
+name: Check for New Stater Bros Ad
+on:
+  schedule:
+    - cron: '0 * * * *'  # every hour, on the hour
+  workflow_dispatch:
