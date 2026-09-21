@@ -2,28 +2,37 @@ import requests
 import random
 import json
 import os
+import re
 
 FLYERS_URL = "https://flyers-ng.flippback.com/api/flipp/data?locale=en&postal_code={}&sid={}"
 ITEMS_URL = "https://flyers-ng.flippback.com/api/flipp/flyers/{}/flyer_items?locale=en&sid={}"
 
-# Keyword-based categorization: much more reliable than flyer layout
-# position, since it's based on what the product actually IS, not
-# where it happens to sit on the printed page. Order matters — first
-# match wins, so more specific categories are checked before broader
-# catch-alls like Pantry.
+# Keyword-based categorization. Order matters — checked top to bottom,
+# first match wins. More specific / brand-heavy categories (alcohol,
+# meat, dairy) are checked before broad catch-alls (Pantry) so a
+# word like "cheese" or "beef" wins over a generic later match.
 CATEGORY_KEYWORDS = [
+    ("Beer, Wine & Spirits", [
+        "beer", "wine", "vodka", "tequila", "whiskey", "bourbon", "rum",
+        "gin", "champagne", "ale", "lager", "ipa", "malo", "hornitos",
+        "casamigos", "don julio", "patron", "modelo", "corona", "heineken",
+        "budweiser", "coors", "michelob", "tecate", "chardonnay", "pinot",
+        "cabernet", "merlot", "dark horse", "la vieille", "bogle",
+        "santa margherita", "decoy", "rombauer", "firestone walker",
+        "sierra nevada", "lagunitas", "gran centenario", "conejos",
+        "aperol", "jim beam", "skyy", "buzzballz", "surfside", "smirnoff",
+        "white claw", "high noon", "twisted tea", "cayman jack",
+        "louis jadot", "la crema", "la marca", "wilson creek", "chandon",
+        "meiomi", "ferrari-carano", "eagle rare", "blanton", "buffalo trace",
+        "colonel e.h. taylor", "gran malo", "tito's", "cutwater",
+        "el jimador", "kona big wave",
+    ]),
     ("Meat & Seafood", [
         "beef", "steak", "rib", "chicken", "turkey", "pork", "bacon",
         "sausage", "salmon", "shrimp", "fish", "seafood", "tri tip",
         "sirloin", "ground turkey", "ground beef", "salami", "pepperoni",
         "bologna", "al pastor", "flanken", "short plate", "loin",
         "chuck", "brisket", "tenders", "leg quarters",
-    ]),
-    ("Fruits & Vegetables", [
-        "apple", "orange", "lettuce", "squash", "potato", "yam",
-        "pepper", "jalapeno", "jalapeño", "plum", "grape", "berries",
-        "strawberr", "raspberr", "onion", "tomato", "avocado", "lime",
-        "lemon", "cucumber", "carrot", "broccoli", "spinach", "salad",
     ]),
     ("Dairy & Eggs", [
         "milk", "cheese", "yogurt", "chobani", "sour cream", "cottage cheese",
@@ -33,35 +42,30 @@ CATEGORY_KEYWORDS = [
     ("Bakery & Bread", [
         "bread", "bagel", "baguette", "muffin", "bun", "cake", "cookie",
         "donut", "donette", "pastry", "sourdough", "toast", "roll",
-        "biscuit",
+        "biscuit", "baked goods", "entenmann",
     ]),
     ("Deli & Prepared Food", [
         "deli", "salad bowl", "mac & cheese", "mashed", "hummus",
-        "fried chicken", "rotisserie", "pot pie", "wrap",
+        "fried chicken", "rotisserie", "pot pie", "wrap", "lunchable",
     ]),
     ("Frozen Food", [
         "frozen", "ice cream", "pizza", "burrito", "chimichanga",
         "hot pocket", "skillet meal", "pasta bake", "fudge bar",
         "novelt", "drumstick", "haagen", "häagen", "popsicle",
+        "breyers", "ben & jerry", "talenti", "yasso", "good humor",
     ]),
     ("Beverages", [
         "soda", "cola", "pepsi", "7up", "squirt", "juice", "water",
         "gatorade", "energy drink", "red bull", "monster", "tea",
         "lemonade", "punch", "sparkling", "coconut water", "sunny d",
-        "citrus punch",
+        "citrus punch", "electrolyte", "beverage",
     ]),
-    ("Beer, Wine & Spirits", [
-        "beer", "wine", "vodka", "tequila", "whiskey", "bourbon", "rum",
-        "gin", "champagne", "ale", "lager", "ipa", "malo", "hornitos",
-        "casamigos", "don julio", "patron", "modelo", "corona", "heineken",
-        "budweiser", "coors", "michelob", "tecate", "chardonnay", "pinot",
-        "cabernet", "merlot",
-    ]),
-    ("Pantry", [
-        "cereal", "peanut butter", "jif", "sauce", "chili", "beans",
-        "rice", "pasta", "oil", "flour", "sugar", "condensed milk",
-        "tuna", "canned", "wonton", "noodle", "cracker", "graham",
-        "wafer", "chips", "snack", "dressing", "mayonnaise", "ketchup",
+    ("Fruits & Vegetables", [
+        "apple", "orange", "lettuce", "squash", "potato", "yam",
+        "jalapeno", "jalapeño", "plum", "grape", "berries",
+        "strawberry", "strawberries", "raspberry", "raspberries",
+        "onion", "tomato", "avocado", "lime",
+        "lemon", "cucumber", "carrot", "broccoli", "spinach", "salad",
     ]),
     ("Health & Beauty", [
         "shampoo", "toothpaste", "oral rinse", "batiste", "therabreath",
@@ -80,6 +84,15 @@ CATEGORY_KEYWORDS = [
     ("Floral", [
         "bouquet", "flower", "floral",
     ]),
+    ("Pantry", [
+        "cereal", "peanut butter", "jif", "sauce", "chili", "beans",
+        "rice", "pasta", "oil", "flour", "sugar", "condensed milk",
+        "tuna", "canned", "wonton", "noodle", "cracker", "graham",
+        "wafer", "chips", "snack", "dressing", "mayonnaise", "ketchup",
+        "tortilla", "harvest snap", "frito lay", "pepper",
+        "ruffles", "doritos", "tostitos", "sunchips", "popcorners",
+        "funyuns", "cheetos", "fritos",
+    ]),
 ]
 
 
@@ -87,7 +100,10 @@ def categorize(name):
     name_lower = name.lower()
     for category, keywords in CATEGORY_KEYWORDS:
         for kw in keywords:
-            if kw in name_lower:
+            # \b = word boundary, so "pepper" matches the standalone
+            # word "pepper" but NOT the "pepper" inside "Pepperidge".
+            pattern = r'\b' + re.escape(kw) + r's?\b'
+            if re.search(pattern, name_lower):
                 return category
     return "Other"
 
