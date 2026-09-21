@@ -7,9 +7,26 @@ import math
 FLYERS_URL = "https://flyers-ng.flippback.com/api/flipp/data?locale=en&postal_code={}&sid={}"
 ITEMS_URL = "https://flyers-ng.flippback.com/api/flipp/flyers/{}/flyer_items?locale=en&sid={}"
 
-# Banner labels that are promotional, not real store departments —
-# products under these get assigned to the nearest REAL department instead.
-EXCLUDED_BANNER_NAMES = {"Digital Deals", "Stater Saver"}
+# The ONLY names we treat as real department headers — matches
+# Stater Bros' own "Shop by Department" list. Anything else with
+# display_type 5 (promo banners, "Celebrate our 90 years", footers,
+# contest callouts, etc.) is ignored when finding the nearest category.
+VALID_DEPARTMENTS = {
+    "Animal & Pet Supplies",
+    "Baby Care",
+    "Bakery & Bread",
+    "Beer, Wine & Spirits",
+    "Beverages",
+    "Dairy & Eggs",
+    "Deli & Prepared Food",
+    "Floral",
+    "Frozen Food",
+    "Fruits & Vegetables",
+    "Health & Beauty",
+    "Home & Outdoor",
+    "Meat & Seafood",
+    "Pantry",
+}
 
 
 def generate_sid():
@@ -40,10 +57,12 @@ def center(entry):
 
 
 def assign_categories(raw_items):
-    # Collect real department banners (display_type 5, excluding promo banners)
+    # Only collect banners whose name is a REAL department —
+    # everything else (promo banners, footers, contest callouts)
+    # is ignored entirely as a category candidate.
     banners = []
     for entry in raw_items:
-        if entry.get("display_type") == 5 and entry.get("name") not in EXCLUDED_BANNER_NAMES:
+        if entry.get("display_type") == 5 and entry.get("name") in VALID_DEPARTMENTS:
             cx, cy = center(entry)
             banners.append({"name": entry["name"], "cx": cx, "cy": cy})
 
@@ -54,7 +73,6 @@ def assign_categories(raw_items):
 
         icx, icy = center(entry)
 
-        # Find nearest banner by straight-line distance
         nearest_name = "Other"
         nearest_dist = None
         for b in banners:
