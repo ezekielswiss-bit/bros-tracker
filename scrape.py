@@ -2,31 +2,94 @@ import requests
 import random
 import json
 import os
-import math
 
 FLYERS_URL = "https://flyers-ng.flippback.com/api/flipp/data?locale=en&postal_code={}&sid={}"
 ITEMS_URL = "https://flyers-ng.flippback.com/api/flipp/flyers/{}/flyer_items?locale=en&sid={}"
 
-# The ONLY names we treat as real department headers — matches
-# Stater Bros' own "Shop by Department" list. Anything else with
-# display_type 5 (promo banners, "Celebrate our 90 years", footers,
-# contest callouts, etc.) is ignored when finding the nearest category.
-VALID_DEPARTMENTS = {
-    "Animal & Pet Supplies",
-    "Baby Care",
-    "Bakery & Bread",
-    "Beer, Wine & Spirits",
-    "Beverages",
-    "Dairy & Eggs",
-    "Deli & Prepared Food",
-    "Floral",
-    "Frozen Food",
-    "Fruits & Vegetables",
-    "Health & Beauty",
-    "Home & Outdoor",
-    "Meat & Seafood",
-    "Pantry",
-}
+# Keyword-based categorization: much more reliable than flyer layout
+# position, since it's based on what the product actually IS, not
+# where it happens to sit on the printed page. Order matters — first
+# match wins, so more specific categories are checked before broader
+# catch-alls like Pantry.
+CATEGORY_KEYWORDS = [
+    ("Meat & Seafood", [
+        "beef", "steak", "rib", "chicken", "turkey", "pork", "bacon",
+        "sausage", "salmon", "shrimp", "fish", "seafood", "tri tip",
+        "sirloin", "ground turkey", "ground beef", "salami", "pepperoni",
+        "bologna", "al pastor", "flanken", "short plate", "loin",
+        "chuck", "brisket", "tenders", "leg quarters",
+    ]),
+    ("Fruits & Vegetables", [
+        "apple", "orange", "lettuce", "squash", "potato", "yam",
+        "pepper", "jalapeno", "jalapeño", "plum", "grape", "berries",
+        "strawberr", "raspberr", "onion", "tomato", "avocado", "lime",
+        "lemon", "cucumber", "carrot", "broccoli", "spinach", "salad",
+    ]),
+    ("Dairy & Eggs", [
+        "milk", "cheese", "yogurt", "chobani", "sour cream", "cottage cheese",
+        "queso", "cream cheese", "butter", "egg", "half & half", "creamer",
+        "almond breeze", "lactaid",
+    ]),
+    ("Bakery & Bread", [
+        "bread", "bagel", "baguette", "muffin", "bun", "cake", "cookie",
+        "donut", "donette", "pastry", "sourdough", "toast", "roll",
+        "biscuit",
+    ]),
+    ("Deli & Prepared Food", [
+        "deli", "salad bowl", "mac & cheese", "mashed", "hummus",
+        "fried chicken", "rotisserie", "pot pie", "wrap",
+    ]),
+    ("Frozen Food", [
+        "frozen", "ice cream", "pizza", "burrito", "chimichanga",
+        "hot pocket", "skillet meal", "pasta bake", "fudge bar",
+        "novelt", "drumstick", "haagen", "häagen", "popsicle",
+    ]),
+    ("Beverages", [
+        "soda", "cola", "pepsi", "7up", "squirt", "juice", "water",
+        "gatorade", "energy drink", "red bull", "monster", "tea",
+        "lemonade", "punch", "sparkling", "coconut water", "sunny d",
+        "citrus punch",
+    ]),
+    ("Beer, Wine & Spirits", [
+        "beer", "wine", "vodka", "tequila", "whiskey", "bourbon", "rum",
+        "gin", "champagne", "ale", "lager", "ipa", "malo", "hornitos",
+        "casamigos", "don julio", "patron", "modelo", "corona", "heineken",
+        "budweiser", "coors", "michelob", "tecate", "chardonnay", "pinot",
+        "cabernet", "merlot",
+    ]),
+    ("Pantry", [
+        "cereal", "peanut butter", "jif", "sauce", "chili", "beans",
+        "rice", "pasta", "oil", "flour", "sugar", "condensed milk",
+        "tuna", "canned", "wonton", "noodle", "cracker", "graham",
+        "wafer", "chips", "snack", "dressing", "mayonnaise", "ketchup",
+    ]),
+    ("Health & Beauty", [
+        "shampoo", "toothpaste", "oral rinse", "batiste", "therabreath",
+        "pads", "liners", "tampon", "always", "tampax",
+    ]),
+    ("Baby Care", [
+        "diaper", "baby",
+    ]),
+    ("Animal & Pet Supplies", [
+        "dog food", "cat food", "pet", "pedigree",
+    ]),
+    ("Home & Outdoor", [
+        "trash bag", "detergent", "cat litter", "paper towel",
+        "bath tissue", "toilet paper", "party cup", "charcoal",
+    ]),
+    ("Floral", [
+        "bouquet", "flower", "floral",
+    ]),
+]
+
+
+def categorize(name):
+    name_lower = name.lower()
+    for category, keywords in CATEGORY_KEYWORDS:
+        for kw in keywords:
+            if kw in name_lower:
+                return category
+    return "Other"
 
 
 def generate_sid():
@@ -50,42 +113,18 @@ def get_flyer_items(flyer_id):
     return response.json()
 
 
-def center(entry):
-    cx = (entry["left"] + entry["right"]) / 2
-    cy = (entry["top"] + entry["bottom"]) / 2
-    return cx, cy
-
-
 def assign_categories(raw_items):
-    # Only collect banners whose name is a REAL department —
-    # everything else (promo banners, footers, contest callouts)
-    # is ignored entirely as a category candidate.
-    banners = []
-    for entry in raw_items:
-        if entry.get("display_type") == 5 and entry.get("name") in VALID_DEPARTMENTS:
-            cx, cy = center(entry)
-            banners.append({"name": entry["name"], "cx": cx, "cy": cy})
-
     output = []
     for entry in raw_items:
         if entry.get("display_type") != 1 or not entry.get("price"):
             continue  # skip banners and items with no real price
 
-        icx, icy = center(entry)
-
-        nearest_name = "Other"
-        nearest_dist = None
-        for b in banners:
-            dist = math.hypot(icx - b["cx"], icy - b["cy"])
-            if nearest_dist is None or dist < nearest_dist:
-                nearest_dist = dist
-                nearest_name = b["name"]
-
+        name = entry["name"]
         output.append({
             "price": entry["price"],
-            "item": entry["name"],
+            "item": name,
             "brand": entry.get("brand") or "",
-            "category": nearest_name,
+            "category": categorize(name),
         })
 
     return output
