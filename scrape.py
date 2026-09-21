@@ -94,3 +94,16 @@ def main():
     print(f"New ad detected! Flyer ID changed from {last_id} to {current_flyer_id}")
 
     raw_items = get_flyer_items(current_flyer_id)
+    output = assign_categories(raw_items)
+
+    with open("stater_bros_ad.json", "w", encoding="utf-8") as f:
+        json.dump(output, f, indent=2, ensure_ascii=False)
+
+    with open(last_id_file, "w") as f:
+        f.write(str(current_flyer_id))
+
+    print(f"Saved {len(output)} items.")
+
+
+if __name__ == "__main__":
+    main()
