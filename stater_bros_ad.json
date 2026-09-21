@@ -9,7 +9,7 @@
     "price": "5.99",
     "item": "Stater Bros. Restaurant Style White Corn Tortilla Strips",
     "brand": "Stater Bros",
-    "category": "Other"
+    "category": "Pantry"
   },
   {
     "price": "2.89",
@@ -39,7 +39,7 @@
     "price": "7.99",
     "item": "Electrolit Electrolyte Beverage",
     "brand": "Electrolit",
-    "category": "Other"
+    "category": "Beverages"
   },
   {
     "price": "3.99",
@@ -69,7 +69,7 @@
     "price": "7.0",
     "item": "Entenmann's Baked Goods",
     "brand": "Entenmann's",
-    "category": "Other"
+    "category": "Bakery & Bread"
   },
   {
     "price": "2.09",
@@ -105,13 +105,13 @@
     "price": "10.99",
     "item": "Cutwater Spirits 4/12 fl. oz. or el Jimador New Mix or VMC 4/355 ml.",
     "brand": "Cutwater | el Jimador | VMC",
-    "category": "Beverages"
+    "category": "Beer, Wine & Spirits"
   },
   {
     "price": "1.09",
     "item": "Jarritos Soda Selected Varieties or Mineragua Sparkling Water 12.5 fl. oz., Sangria Señorial 11.16 fl. oz. or Sidral Mundet Apple Soda 12 fl. oz.",
     "brand": "Jarritos | Mineragua | Sangria Señorial | Sidral Mundet",
-    "category": "Fruits & Vegetables"
+    "category": "Beverages"
   },
   {
     "price": "1.99",
@@ -147,13 +147,13 @@
     "price": "22.39",
     "item": "Santa Margherita, Decoy Limited or Rombauer Vineyards",
     "brand": "Santa Margherita | Decoy | Rombauer",
-    "category": "Other"
+    "category": "Beer, Wine & Spirits"
   },
   {
     "price": "23.99",
     "item": "Gran Centenario Reposado, 400 Conejos or Aperol",
     "brand": "Gran Centenario | 400 Conejos | Aperol",
-    "category": "Other"
+    "category": "Beer, Wine & Spirits"
   },
   {
     "price": "4.99",
@@ -201,7 +201,7 @@
     "price": "2.99",
     "item": "Bonduelle Bistro Salad Bowls",
     "brand": "Bonduelle",
-    "category": "Fruits & Vegetables"
+    "category": "Deli & Prepared Food"
   },
   {
     "price": "3.99",
@@ -267,7 +267,7 @@
     "price": "3.9",
     "item": "Pepperidge Farm Cookies 5 to 8.6 oz. Selected Varieties or Sun-Maid Cinnamon Swirl Raisin Bread 16 oz.",
     "brand": "Pepperidge Farm | Sun-Maid",
-    "category": "Fruits & Vegetables"
+    "category": "Bakery & Bread"
   },
   {
     "price": "35.99",
@@ -309,7 +309,7 @@
     "price": "7.19",
     "item": "Dark Horse, La Vieille or Bogle",
     "brand": "Dark Horse | La Vieille | Bogle",
-    "category": "Other"
+    "category": "Beer, Wine & Spirits"
   },
   {
     "price": "4.49",
@@ -345,7 +345,7 @@
     "price": "4.99",
     "item": "Breyers 1.5 qt., Ben & Jerry's 14.4 to 16 fl. oz. or 4 ct., Talenti 10.7 to 16 fl. oz. or 4 ct., Yasso 14 fl. oz. or 4 ct. or Good Humor 6 ct.",
     "brand": "Breyers | Ben & Jerry's | Talenti | Yasso | Good Humor",
-    "category": "Beer, Wine & Spirits"
+    "category": "Frozen Food"
   },
   {
     "price": "7.99",
@@ -405,7 +405,7 @@
     "price": "19.99",
     "item": "Firestone Walker, Sierra Nevada or Lagunitas",
     "brand": "Firestone Walker | Sierra Nevada | Lagunitas",
-    "category": "Other"
+    "category": "Beer, Wine & Spirits"
   },
   {
     "price": "17.99",
@@ -423,13 +423,13 @@
     "price": "18.99",
     "item": "Dole 100% Pineapple Juice",
     "brand": "Dole",
-    "category": "Fruits & Vegetables"
+    "category": "Beverages"
   },
   {
     "price": "20.99",
     "item": "Frito Lay Multipacks",
     "brand": "Frito Lay",
-    "category": "Beer, Wine & Spirits"
+    "category": "Pantry"
   },
   {
     "price": "12.99",
@@ -447,7 +447,7 @@
     "price": "25.99",
     "item": "Martinelli's 100% Apple Juice",
     "brand": "Martinelli's",
-    "category": "Fruits & Vegetables"
+    "category": "Beverages"
   },
   {
     "price": "5.99",
@@ -525,7 +525,7 @@
     "price": "0.99",
     "item": "Stater Bros. Tomatoes 14.5 oz. Selected Varieties or Chunk Light Tuna in Water 5 oz.",
     "brand": "Stater Bros",
-    "category": "Fruits & Vegetables"
+    "category": "Beverages"
   },
   {
     "price": "7.99",
@@ -567,7 +567,7 @@
     "price": "2.29",
     "item": "Stater Bros. Apple Juice",
     "brand": "Stater Bros",
-    "category": "Fruits & Vegetables"
+    "category": "Beverages"
   },
   {
     "price": "8.0",
@@ -579,7 +579,7 @@
     "price": "2.99",
     "item": "Calbee Harvest Snaps",
     "brand": "Calbee",
-    "category": "Other"
+    "category": "Pantry"
   },
   {
     "price": "1.99",
@@ -615,7 +615,7 @@
     "price": "3.99",
     "item": "Service Deli Macaroni & Cheese or Mashed Red Skin Potatoes",
     "brand": "",
-    "category": "Fruits & Vegetables"
+    "category": "Dairy & Eggs"
   },
   {
     "price": "7.99",
@@ -669,7 +669,7 @@
     "price": "9.99",
     "item": "Cornershop Cuts Pepper Jack Cheese",
     "brand": "Cornershop",
-    "category": "Fruits & Vegetables"
+    "category": "Dairy & Eggs"
   },
   {
     "price": "5.0",
@@ -705,7 +705,7 @@
     "price": "3.49",
     "item": "Lunchables Uploaded",
     "brand": "Lunchables",
-    "category": "Other"
+    "category": "Deli & Prepared Food"
   },
   {
     "price": "5.99",
