@@ -141,6 +141,7 @@ def assign_categories(raw_items):
             "item": name,
             "brand": entry.get("brand") or "",
             "category": categorize(name),
+            "image_url": entry.get("cutout_image_url") or "",
         })
 
     return output
