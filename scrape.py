@@ -3,6 +3,7 @@ import random
 import json
 import os
 import re
+from datetime import datetime, timezone
 
 FLYERS_URL = "https://flyers-ng.flippback.com/api/flipp/data?locale=en&postal_code={}&sid={}"
 ITEMS_URL = "https://flyers-ng.flippback.com/api/flipp/flyers/{}/flyer_items?locale=en&sid={}"
@@ -112,14 +113,50 @@ def generate_sid():
     return ''.join(str(random.randint(0, 9)) for _ in range(16))
 
 
-def get_stater_bros_flyer_id(zip_code):
+def parse_date(value):
+    try:
+        return datetime.fromisoformat(value) if value else None
+    except ValueError:
+        return None
+
+
+def get_stater_bros_flyer(zip_code):
+    """Return the newest Stater Bros weekly ad, or None.
+
+    When a new ad goes up, Flipp often keeps listing the old one until
+    it expires, in no particular order. Taking the first match made the
+    saved ad flip back and forth between old and new, so pick the
+    still-running flyer with the latest valid_from date instead.
+    """
     sid = generate_sid()
     response = requests.get(FLYERS_URL.format(zip_code, sid))
     response.raise_for_status()
-    for flyer in response.json().get("flyers", []):
-        if flyer.get("merchant") == "Stater Bros. Markets":
-            return flyer["id"]
-    return None
+    flyers = [
+        f for f in response.json().get("flyers", [])
+        if f.get("merchant") == "Stater Bros. Markets"
+    ]
+    if not flyers:
+        return None
+
+    now = datetime.now(timezone.utc)
+    running = [
+        f for f in flyers
+        if (parse_date(f.get("valid_to")) or now) >= now
+    ]
+    oldest = datetime.min.replace(tzinfo=timezone.utc)
+    return max(
+        running or flyers,
+        key=lambda f: (parse_date(f.get("valid_from")) or oldest, f["id"]),
+    )
+
+
+def load_saved_ad(path):
+    """Return the saved ad's metadata dict, or {} for a missing/old-format file."""
+    if not os.path.exists(path):
+        return {}
+    with open(path, encoding="utf-8") as f:
+        data = json.load(f)
+    return data if isinstance(data, dict) else {}
 
 
 def get_flyer_items(flyer_id):
@@ -149,34 +186,50 @@ def assign_categories(raw_items):
 
 def main():
     zip_code = "92604"
-    current_flyer_id = get_stater_bros_flyer_id(zip_code)
+    ad_file = "stater_bros_ad.json"
+    flyer = get_stater_bros_flyer(zip_code)
 
-    if not current_flyer_id:
+    if not flyer:
         print("No Stater Bros flyer found.")
         return
 
-    last_id_file = "last_flyer_id.txt"
-    last_id = None
-    if os.path.exists(last_id_file):
-        with open(last_id_file) as f:
-            last_id = f.read().strip()
+    current_flyer_id = flyer["id"]
+    saved = load_saved_ad(ad_file)
+    last_id = saved.get("flyer_id")
 
-    if str(current_flyer_id) == last_id:
+    if current_flyer_id == last_id:
         print("No new ad. Skipping.")
+        return
+
+    # Never replace a newer ad with an older one.
+    saved_from = parse_date(saved.get("valid_from"))
+    current_from = parse_date(flyer.get("valid_from"))
+    if saved_from and current_from and current_from < saved_from:
+        print(f"Flyer {current_flyer_id} is older than saved ad {last_id}. Skipping.")
         return
 
     print(f"New ad detected! Flyer ID changed from {last_id} to {current_flyer_id}")
 
     raw_items = get_flyer_items(current_flyer_id)
-    output = assign_categories(raw_items)
+    output = {
+        "flyer_id": current_flyer_id,
+        "valid_from": flyer.get("valid_from"),
+        "valid_to": flyer.get("valid_to"),
+        "fetched_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "items": assign_categories(raw_items),
+    }
 
-    with open("stater_bros_ad.json", "w", encoding="utf-8") as f:
+    with open(ad_file, "w", encoding="utf-8") as f:
         json.dump(output, f, indent=2, ensure_ascii=False)
 
-    with open(last_id_file, "w") as f:
+    # Kept for reference; the ad file itself is now the source of truth.
+    with open("last_flyer_id.txt", "w") as f:
         f.write(str(current_flyer_id))
 
-    print(f"Saved {len(output)} items.")
+    print(
+        f"Saved {len(output['items'])} items "
+        f"(valid {output['valid_from']} to {output['valid_to']})."
+    )
 
 
 if __name__ == "__main__":
